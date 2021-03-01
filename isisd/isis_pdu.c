@@ -172,6 +172,12 @@ static int process_p2p_hello(struct iih_info *iih)
 					      "adj do not exist");
 			return ISIS_OK;
 		}
+
+		/* If local adj is up and remote reports down, report neighbor restart */
+		if (tw_adj && tw_adj->state == ISIS_THREEWAY_DOWN && adj->adj_state == ISIS_ADJ_UP) {
+			isis_adj_state_change(&adj, ISIS_ADJ_DOWN, "neighbor restarted");
+			return ISIS_OK;
+		}
 	}
 	if (!adj || adj->level != iih->circ_type) {
 		if (!adj) {
