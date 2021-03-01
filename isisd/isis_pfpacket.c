@@ -47,15 +47,23 @@
 
 /* tcpdump -i eth0 'isis' -dd */
 static const struct sock_filter isisfilter[] = {
-	/* NB: we're in SOCK_DGRAM, so src/dst mac + length are stripped
+	/* NB: we're in SOCK_DGRAM, so protocol headers are stripped
 	 * off!
-	 * (OTOH it's a bit more lower-layer agnostic and might work
-	 * over GRE?) */
-	/*	{ 0x28, 0, 0, 0x0000000c - 14 }, */
-	/*	{ 0x25, 5, 0, 0x000005dc }, */
-	{0x28, 0, 0, 0x0000000e - 14}, {0x15, 0, 3, 0x0000fefe},
-	{0x30, 0, 0, 0x00000011 - 14}, {0x15, 0, 1, 0x00000083},
-	{0x6, 0, 0, 0x00040000},       {0x6, 0, 0, 0x00000000},
+	 *
+	 * If ethernet, everything pre-ethertype is removed. First word
+	 * is therefore ethertype, which will be 0xfefe for ISO. If it
+	 * isn't ethernet, it might be GRE, in which case the headers
+	 * up to protocol type are removed, and thus first byte is the
+	 * prototol type, which will be 0x83 for IS-IS (0x82 for ES-IS).
+	 */
+	{ 0x28, 0, 0, 0x00000000 },
+	{ 0x15, 0, 2, 0x0000fefe },
+	{ 0x30, 0, 0, 0x00000003 },
+	{ 0x05, 0, 0, 0x00000001 },
+	{ 0x30, 0, 0, 0x00000000 },
+	{ 0x15, 0, 1, 0x00000083 },
+	{ 0x06, 0, 0, 0x00040000 },
+	{ 0x06, 0, 0, 0x00000000 }
 };
 
 static const struct sock_fprog bpf = {
