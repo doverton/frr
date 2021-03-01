@@ -2370,9 +2370,8 @@ static int unpack_tlv_threeway_adj(enum isis_tlv_context context,
 				       void *dest, int indent)
 {
 	struct isis_tlvs *tlvs = dest;
-
 	sbuf_push(log, indent, "Unpacking P2P Three-Way Adjacency TLV...\n");
-	if (tlv_len != 5 && tlv_len != 15) {
+	if (tlv_len != 1 && tlv_len != 5 && tlv_len != 15) {
 		sbuf_push(log, indent, "WARNING: Unexpected TLV size\n");
 		stream_forward_getp(s, tlv_len);
 		return 0;
@@ -2388,7 +2387,11 @@ static int unpack_tlv_threeway_adj(enum isis_tlv_context context,
 	tlvs->threeway_adj = XCALLOC(MTYPE_ISIS_TLV, sizeof(*tlvs->threeway_adj));
 
 	tlvs->threeway_adj->state = stream_getc(s);
-	tlvs->threeway_adj->local_circuit_id = stream_getl(s);
+
+	if (tlv_len >= 5)
+		tlvs->threeway_adj->local_circuit_id = stream_getl(s);
+	else
+		tlvs->threeway_adj->local_circuit_id = 0;
 
 	if (tlv_len == 15) {
 		tlvs->threeway_adj->neighbor_set = true;
